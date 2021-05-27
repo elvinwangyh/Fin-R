@@ -18,7 +18,7 @@ library(rlist)
 
 # Basic Data 
 ```{r, warning=FALSE, message=FALSE}
-asset_symbol <- "BA"
+asset_symbol <- "BABA"
 date_today <- today()
 spot_price <- getQuote(asset_symbol)$Last
 option_chain <- getOptionChain(asset_symbol, Exp = NULL, src = "yahoo")
