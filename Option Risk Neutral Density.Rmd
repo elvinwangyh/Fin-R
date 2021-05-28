@@ -41,9 +41,9 @@ na.fill(chain, 0)
 chain$put_rearranged <- sort(chain$puts.Last, decreasing = FALSE)
 chain$call_rearranged <- sort(chain$calls.Last, decreasing = TRUE)
 
-option_exp.list <- names(all_chains)
-expiration_date  <- toString(option_exp.list[chain_in_q]) 
-expiration_date <- strptime(expiration_date, 
+option_exp_list <- names(all_chains)
+expiration_date  <- toString(option_exp_list[chain_in_q])
+expiration_date <- strptime(expiration_date,
                             format = "%B.%d.%Y", tz = "EST") %>%
                             as.Date(expiration_date, format = "%Y-%m-%d")
 
@@ -81,9 +81,9 @@ open_interest
 ```
 ## Call-Put Ratio
 ```{r}
-chain$cp.ratio <- chain$calls.OI / chain$puts.OI
-cp.ratio <- plot_ly(chain,
-                    x = ~calls.Strike, y = ~cp.ratio,
+chain$cp_ratio <- chain$calls.OI / chain$puts.OI
+cp_ratio <- plot_ly(chain,
+                    x = ~calls.Strike, y = ~cp_ratio,
                     type = "bar", name = "Call-Put Ratio") %>%
   layout(yaxis = list(title = "Ratio")) %>%
   add_segments(name = "Spot Price",
@@ -93,7 +93,7 @@ cp.ratio <- plot_ly(chain,
                yend = max(chain$cp.ratio),
                line = list(dash = "dash"))
 
-cp.ratio
+cp_ratio
 ```
 
 ## Volume
@@ -262,17 +262,17 @@ eu_mln_pricing <- price.mln.option(r = rates$risk.free.rate,
                                    sdlog.1 = ext_eu_mln$sdlog.1,
                                    sdlog.2 = ext_eu_mln$sdlog.2)
 
-chain$eu.mln.calls <- eu_mln_pricing$call
-chain$eu.mln.puts <- eu_mln_pricing$put
+chain$eu_mln_calls <- eu_mln_pricing$call
+chain$eu_mln_puts <- eu_mln_pricing$put
 
 mln_model_actual <- plot_ly(chain,
                             x = ~calls.Strike, y = ~calls.Last,
                             name = "Market Calls",
                             type = "scatter",
                             mode = "lines+markers") %>%
-  add_trace(y = ~eu.mln.calls, name = "MLN Calls", mode = "lines+markers") %>%
+  add_trace(y = ~eu_mln_calls, name = "MLN Calls", mode = "lines+markers") %>%
   add_trace(y = ~puts.Last, name = "Market Puts", mode = "lines+markers") %>%
-  add_trace(y = ~eu.mln.puts, name = "MLN Puts", mode = "lines+markers") %>%
+  add_trace(y = ~eu_mln_puts, name = "MLN Puts", mode = "lines+markers") %>%
   add_segments(name = "Spot Price",
                x = spot_price,
                xend = spot_price,
@@ -285,8 +285,8 @@ mln_model_actual
 ```
 ### Stats
 ```{r}
-eu_mln_lm_call <- lm(calls.Last~eu.mln.calls, data = chain)
-eu_mln_lm_put <- lm(calls.Last~eu.mln.calls, data = chain)
+eu_mln_lm_call <- lm(calls.Last~eu_mln_calls, data = chain)
+eu_mln_lm_put <- lm(calls.Last~eu_mln_calls, data = chain)
 
 summary(eu_mln_lm_call)
 summary(eu_mln_lm_put)
@@ -340,17 +340,17 @@ eu_gb_pricing <- price.gb.option(r = rates$risk.free.rate,
                                  v = ext_eu_gb$v,
                                  w = ext_eu_gb$w)
 
-chain$eu.gb.calls <- eu_gb_pricing$call
-chain$eu.gb.puts <- eu_gb_pricing$put
+chain$eu_gb_calls <- eu_gb_pricing$call
+chain$eu_gb_puts <- eu_gb_pricing$put
 
 gb_model_actual <- plot_ly(chain,
                            x = ~calls.Strike, y = ~calls.Last,
                            name = "Market Calls",
                            type = "scatter",
                            mode = "lines+markers") %>%
-  add_trace(y = ~eu.gb.calls, name = "GB Calls", mode = "lines+markers") %>%
+  add_trace(y = ~eu_gb_calls, name = "GB Calls", mode = "lines+markers") %>%
   add_trace(y = ~puts.Last, name = "Market Puts", mode = "lines+markers") %>%
-  add_trace(y = ~eu.gb.puts, name = "GB Puts", mode = "lines+markers") %>%
+  add_trace(y = ~eu_gb_puts, name = "GB Puts", mode = "lines+markers") %>%
   add_segments(name = "Spot Price",
                x = spot_price,
                xend = spot_price,
@@ -363,8 +363,8 @@ gb_model_actual
 ```
 ### Stats
 ```{r}
-eu_gb_lm_call <- lm(calls.Last~eu.gb.calls, data = chain)
-eu_gb_lm_put <- lm(calls.Last~eu.gb.calls, data = chain)
+eu_gb_lm_call <- lm(calls.Last~eu_gb_calls, data = chain)
+eu_gb_lm_put <- lm(calls.Last~eu_gb_calls, data = chain)
 
 summary(eu_gb_lm_call)
 summary(eu_gb_lm_put)
@@ -417,17 +417,17 @@ eu_ew_pricing <- price.ew.option(k = chain$calls.Last,
                                  skew = ext_eu_ew$skew,
                                  kurt = ext_eu_ew$kurt)
 
-chain$eu.ew.calls <- eu_ew_pricing$call
-chain$eu.ew.puts <- eu_ew_pricing$put
+chain$eu_ew_calls <- eu_ew_pricing$call
+chain$eu_ew_puts <- eu_ew_pricing$put
 
 ew_model_actual <- plot_ly(chain,
                           x = ~calls.Strike, y = ~calls.Last,
                           name = "Market Calls",
                           type = "scatter",
                           mode = "lines+markers") %>%
-  add_trace(y = ~eu.ew.calls, name = "EW Calls", mode = "lines+markers") %>%
+  add_trace(y = ~eu_ew_calls, name = "EW Calls", mode = "lines+markers") %>%
   add_trace(y = ~puts.Last, name = "Market Puts", mode = "lines+markers") %>%
-  add_trace(y = ~eu.ew.puts, name = "EW Puts", mode = "lines+markers") %>%
+  add_trace(y = ~eu_ew_puts, name = "EW Puts", mode = "lines+markers") %>%
   add_segments(name = "Spot Price",
                x = spot_price,
                xend = spot_price,
@@ -440,8 +440,8 @@ ew_model_actual
 ```
 ### Stats
 ```{r}
-eu_ew_lm_call <- lm(calls.Last~eu.ew.calls, data = chain)
-eu_ew_lm_put <- lm(calls.Last~eu.ew.calls, data = chain)
+eu_ew_lm_call <- lm(calls.Last~eu_ew_calls, data = chain)
+eu_ew_lm_put <- lm(calls.Last~eu_ew_calls, data = chain)
 
 summary(eu_ew_lm_call)
 summary(eu_ew_lm_put)
@@ -486,39 +486,41 @@ density_eu_shimko
 ```{r}
 eu_shimko_call <- numeric(length(chain$calls.Strike))
 for (i in seq_len(length(chain$calls.Strike))) {
-    eu_shimko_call[i] <- price.shimko.option(k = chain$calls.Strike[i],
-                                             r = rates$risk.free.rate,
-                                             y = rates$dividend.yield,
-                                             te = days_to_expiration / 365,
-                                             s0 = spot_price,
-                                             a0 = ext_eu_shimko$implied.curve.obj$a0,
-                                             a1 = ext_eu_shimko$implied.curve.obj$a1,
-                                             a2 = ext_eu_shimko$implied.curve.obj$a2)$put
+    eu_shimko_call[i] <- price.shimko.option(
+      k = chain$calls.Strike[i],
+      r = rates$risk.free.rate,
+      y = rates$dividend.yield,
+      te = days_to_expiration / 365,
+      s0 = spot_price,
+      a0 = ext_eu_shimko$implied.curve.obj$a0,
+      a1 = ext_eu_shimko$implied.curve.obj$a1,
+      a2 = ext_eu_shimko$implied.curve.obj$a2)$put
                                          }
 
 eu_shimko_put <- numeric(length(chain$calls.Strike))
 for (j in seq_len(length(chain$calls.Strike))) {
-    eu_shimko_put[j] <- price.shimko.option(k = chain$calls.Strike[j],
-                                            r = rates$risk.free.rate,
-                                            y = rates$dividend.yield,
-                                            te = days_to_expiration / 365,
-                                            s0 = spot_price,
-                                            a0 = ext_eu_shimko$implied.curve.obj$a0,
-                                            a1 = ext_eu_shimko$implied.curve.obj$a1,
-                                            a2 = ext_eu_shimko$implied.curve.obj$a2)$call
+    eu_shimko_put[j] <- price.shimko.option(
+      k = chain$calls.Strike[j],
+      r = rates$risk.free.rate,
+      y = rates$dividend.yield,
+      te = days_to_expiration / 365,
+      s0 = spot_price,
+      a0 = ext_eu_shimko$implied.curve.obj$a0,
+      a1 = ext_eu_shimko$implied.curve.obj$a1,
+      a2 = ext_eu_shimko$implied.curve.obj$a2)$call
                                          }
 
-chain$eu.shimko.calls <- eu_shimko_call
-chain$eu.shimko.puts <- eu_shimko_put
+chain$eu_shimko_calls <- eu_shimko_call
+chain$eu_shimko_puts <- eu_shimko_put
 
 shimko_model_actual <- plot_ly(chain,
                                x = ~calls.Strike, y = ~calls.Last,
                                name = "Market Calls",
                                type = "scatter",
                                mode = "lines+markers") %>%
-  add_trace(y = ~eu.shimko.calls, name = "EW Calls", mode = "lines+markers") %>%
+  add_trace(y = ~eu_shimko_calls, name = "EW Calls", mode = "lines+markers") %>%
   add_trace(y = ~puts.Last, name = "Market Puts", mode = "lines+markers") %>%
-  add_trace(y = ~eu.shimko.puts, name = "EW Puts", mode = "lines+markers") %>%
+  add_trace(y = ~eu_shimko_puts, name = "EW Puts", mode = "lines+markers") %>%
   add_segments(name = "Spot Price",
                x = spot_price,
                xend = spot_price,
@@ -531,8 +533,8 @@ shimko_model_actual
 ```
 ### Stats
 ```{r}
-eu_shimko_lm_call <- lm(calls.Last~eu.shimko.calls, data = chain)
-eu_shimko_lm_put <- lm(calls.Last~eu.shimko.puts, data = chain)
+eu_shimko_lm_call <- lm(calls.Last~eu_shimko_calls, data = chain)
+eu_shimko_lm_put <- lm(calls.Last~eu_shimko_puts, data = chain)
 
 summary(eu_shimko_lm_call)
 summary(eu_shimko_lm_put)
@@ -598,12 +600,12 @@ density_am
 
 ### Pricing  
 ```{r, warning=FALSE}
-chain$am.mln.calls <- numeric(length(chain$calls.Strike))
-chain$am.mln.puts  <- numeric(length(chain$calls.Strike))
+chain$am_mln_calls <- numeric(length(chain$calls.Strike))
+chain$am_mln_puts  <- numeric(length(chain$calls.Strike))
 
 for (i in seq_len(length(chain$calls.Strike))) {
   if (chain$calls.Strike[i] < am_expected_f0) {
-    chain$am.mln.calls[i] <- price.am.option(
+    chain$am_mln_calls[i] <- price.am.option(
       k = chain$calls.Strike[i],
       r = rates$risk.free.rate,
       te = days_to_expiration / 365,
@@ -617,7 +619,7 @@ for (i in seq_len(length(chain$calls.Strike))) {
       p.1 = ext_am_mln$p.1,
       p.2 = ext_am_mln$p.2)$call.value
 
-    chain$am.mln.puts[i] <- price.am.option(
+    chain$am_mln_puts[i] <- price.am.option(
       k = chain$calls.Strike[i],
       r = rates$risk.free.rate,
       te = days_to_expiration / 365,
@@ -630,8 +632,10 @@ for (i in seq_len(length(chain$calls.Strike))) {
       sigma.3 = ext_am_mln$sigma.3,
       p.1 = ext_am_mln$p.1,
       p.2 = ext_am_mln$p.2)$put.value
+
   }  else {
-    chain$am.mln.calls[i] <- price.am.option(
+
+    chain$am_mln_calls[i] <- price.am.option(
       k = chain$calls.Strike[i],
       r = rates$risk.free.rate,
       te = days_to_expiration / 365,
@@ -645,7 +649,7 @@ for (i in seq_len(length(chain$calls.Strike))) {
       p.1 = ext_am_mln$p.1,
       p.2 = ext_am_mln$p.2)$call.value
 
-    chain$am.mln.puts[i] <- price.am.option(
+    chain$am_mln_puts[i] <- price.am.option(
       k = chain$calls.Strike[i],
       r = rates$risk.free.rate,
       te = days_to_expiration / 365,
@@ -668,9 +672,9 @@ am_model_actual <- plot_ly(chain, x = ~calls.Strike, y = ~calls.Last,
                           name = "Market Calls",
                           type = "scatter",
                           mode = "lines+markers") %>%
-  add_trace(y = ~am.mln.calls, name = "MixLN Calls", mode = "lines+markers") %>%
+  add_trace(y = ~am_mln_calls, name = "MixLN Calls", mode = "lines+markers") %>%
   add_trace(y = ~puts.Last, name = "Market Puts", mode = "lines+markers") %>%
-  add_trace(y = ~am.mln.puts, name = "MixLN Puts", mode = "lines+markers") %>%
+  add_trace(y = ~am_mln_puts, name = "MixLN Puts", mode = "lines+markers") %>%
   add_segments(name = "Spot Price",
                x = spot_price,
                xend = spot_price,
@@ -689,8 +693,8 @@ am_model_actual
 
 ### Stats
 ```{r, echo=FALSE}
-am_mln_lm_call <- lm(calls.Last~am.mln.calls, data = chain)
-am_mln_lm_put <- lm(puts.Last~am.mln.puts, data = chain)
+am_mln_lm_call <- lm(calls.Last~am_mln_calls, data = chain)
+am_mln_lm_put <- lm(puts.Last~am_mln_puts, data = chain)
 
 am_expected_f0
 summary(am_mln_lm_call)
