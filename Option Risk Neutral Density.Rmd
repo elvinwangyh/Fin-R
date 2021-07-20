@@ -21,7 +21,7 @@ library(rlist)
 asset_symbol <- "BABA"
 date_today <- today()
 spot_price <- getQuote(asset_symbol)$Last
-all_chains <- getOptionChain(asset_symbol, Exp = NULL, src = "yahoo")
+all_option_chains <- getOptionChain(asset_symbol, Exp = NULL, src = "yahoo")
 
 date_today
 spot_price
@@ -30,18 +30,24 @@ spot_price
 
 # Extract Rates
 ```{r, warning=FALSE, message=FALSE, results="hide"}
-chain_in_q <- 2
-chain <- merge(all_chains[[chain_in_q]][1],
-               all_chains[[chain_in_q]][2],
+option <- list()
+option[["basic"]]["chain_in_q"] <- 2
+
+
+for (i in seq_len(length(all_option_chains))) {
+option[["basic"]]["chain"][i] <- merge(all_option_chains[[i]][1],
+               all_option_chains[[i]][2],
                by.x = "calls.Strike",
                by.y = "puts.Strike")
+na.fill(option[["basic"]]["chain"][i], 0)
+}
+```
 
-na.fill(chain, 0)
-
+```{r}
 chain$put_rearranged <- sort(chain$puts.Last, decreasing = FALSE)
 chain$call_rearranged <- sort(chain$calls.Last, decreasing = TRUE)
 
-option_exp_list <- names(all_chains)
+option_exp_list <- names(all_option_chains)
 expiration_date  <- toString(option_exp_list[chain_in_q])
 expiration_date <- strptime(expiration_date,
                             format = "%B.%d.%Y", tz = "EST") %>%
