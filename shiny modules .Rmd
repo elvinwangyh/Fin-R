@@ -1,0 +1,295 @@
+---
+title: "Investment Research"
+author: "WANG YUHUI"
+date: "6/24/2021"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    number_sections: yes
+---
+
+
+```{r, packages,warning=FALSE, message = FALSE, echo=FALSE}
+library(parallel)
+library(tidyverse)
+library(ggplot2)
+library(plotly)
+library(lubridate)
+library(stats)
+library(forecast)
+library(quantmod)
+library(PerformanceAnalytics)
+library(PortfolioAnalytics)
+library(TTR)
+library(quantstrat)
+library(blotter)
+library(readxl)
+library(stringi)
+library(kableExtra)
+library(TSstudio)
+library(RCurl)
+library(jsonlite)
+```
+
+```{r, "china equity list", message=FALSE,warning=FALSE,echo=FALSE}
+download.file("https://www.hkex.com.hk/-/media/HKEX-Market/Mutual-Market/Stock-Connect/Eligible-Stocks/View-All-Eligible-Securities_xls/Change_of_SSE_Securities_Lists.xls?la=en", destfile = "/Users/yuhuiwang/Investment/SSE_list.xls") 
+SSE_list <- read_excel("SSE_list.xls")
+names(SSE_list) <- SSE_list[3,] 
+SSE_list <- SSE_list[-c(1:3),]
+ 
+SZSE_list <- download.file("https://www.hkex.com.hk/-/media/HKEX-Market/Mutual-Market/Stock-Connect/Eligible-Stocks/View-All-Eligible-Securities_xls/Change_of_SZSE_Securities_Lists.xls?la=en", destfile = "/Users/yuhuiwang/Investment/SZSE_list.xls")
+SZSE_list <- read_excel("SZSE_list.xls")
+names(SZSE_list) <- SZSE_list[3,]
+SZSE_list <- SZSE_list[-c(1:3),]
+
+HKEX_list <- download.file("https://www.hkex.com.hk/eng/services/trading/securities/securitieslists/ListOfSecurities.xlsx", destfile = "/Users/yuhuiwang/Investment/HKEX_list.xlsx")
+HKEX_list <- read_excel("HKEX_list.xlsx")
+names(HKEX_list) <- HKEX_list[2,]
+HKEX_list <- HKEX_list[-c(1,2),]
+
+US_list <- getURL("https://api.nasdaq.com/api/screener/stocks?tableonly=true&limit=25&offset=0&download=true")
+US_list <- fromJSON(US_list)$data
+US_list <- US_list$rows 
+names(US_list) <- c("Symbol", "Name", "Last Sale", "Net Change", "% Change", "Market Cap", "Volume", "Country", "IPO Year", "Sector", "Industry", "Url")
+```
+
+# Basic Data  
+```{r, "input data", warning=FALSE, message=FALSE, echo=FALSE}
+asset_symbol <- "603939.SS"
+start_date <- "2019-01-01"
+date_today <- today()
+
+print(paste("Asset Symbol: ", asset_symbol))
+print(paste("Start Date: ", start_date))
+print(paste("Date Today: ", date_today))
+```
+
+
+```{r, "Matching details", warning = FALSE, echo=FALSE}
+split_symbol <- str_split(asset_symbol, "\\.") %>% unlist() 
+
+if (any(str_detect(split_symbol, "SS") == TRUE)) { 
+  as.numeric(split_symbol)
+  SSE_list[split_symbol[1]==SSE_list$`SSE Stock Code`,] %>% kbl() %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+  
+} else if (any(str_detect(split_symbol, "SZ") == TRUE)) {
+  as.numeric(split_symbol)
+  SZSE_list[split_symbol[1]==SZSE_list$`SZSE Stock Code`,] %>% kbl() %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+  
+} else if (any(str_detect(split_symbol, "HK") == TRUE)) {
+  as.numeric(split_symbol)
+  SZSE_list[split_symbol[1]==HKEX_list$`Stock Code`,] %>% kbl() %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+  
+} else if (is.numeric(split_symbol) == FALSE) {
+  US_list[split_symbol==US_list[1]] %>% kbl() %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), fixed_thead = T)
+  
+} else {break}
+
+```
+
+```{r, message = FALSE, echo=FALSE}
+price_daily <- getSymbols(asset_symbol, auto.assign = FALSE, from = start_date, src = "yahoo") %>% na.omit()
+daily_return <- xts()
+daily_return$Discrete<- Return.calculate(price_daily[,4], method = c("discrete")) %>% na.fill(0)
+daily_return$Cumulative<- cumsum(daily_return$Discrete)
+daily_return$Geometric <- cumprod(1+daily_return$Discrete)-1
+
+
+price_weekly <- xts() 
+price_weekly <- to.weekly(price_daily)
+weekly_return <- xts()
+weekly_return$Discrete<- Return.calculate(price_weekly[,4], method = c("discrete")) %>% na.fill(0)
+weekly_return$Cumulative<- cumsum(weekly_return$Discrete)
+weekly_return$Geometric <- cumprod(1+weekly_return$Discrete)-1
+
+price_monthly <- xts() 
+price_monthly <- to.monthly(price_daily)
+monthly_return <- xts()
+monthly_return$Discrete<- Return.calculate(price_monthly[,4], method = c("discrete")) %>% na.fill(0)
+monthly_return$Cumulative<- cumsum(monthly_return$Discrete)
+monthly_return$Geometric <- cumprod(1+monthly_return$Discrete)-1
+```
+
+
+# Overview 
+```{r}
+chart.Histogram(daily_return$Discrete)
+chart.ECDF(daily_return$Discrete)
+chart.QQPlot(daily_return$Discrete)
+charts.PerformanceSummary(daily_return$Discrete, plot.engine = "plotly")
+
+```
+
+# Technical, Time Series Analysis 
+## Price  
+```{r, echo=FALSE}
+table.Stats(price_daily[,4])
+
+chart.ACFplus(price_daily[,4])
+
+Close_arima <- auto.arima(price_daily[,4], stationary = FALSE)
+autoplot(forecast(Close_arima))
+
+checkresiduals(Close_arima)
+
+forecast_sim(Close_arima, 20, 250, sim_color = "orange", opacity = 0.25, plot = TRUE)
+
+
+
+```
+
+## Cumulative Return  
+```{r}
+table.Stats(daily_return$Cumulative)
+
+chart.ACFplus(daily_return$Cumulative)
+
+Return_cum_arima <- auto.arima(daily_return$Cumulative, stationary = FALSE)
+autoplot(forecast(Return_cum_arima))
+
+checkresiduals(Return_cum_arima)
+```
+ 
+## ROC  
+```{r}
+Technical_Analysis <- xts()
+Technical_Analysis$ROC <- ROC(price_daily[,4], n=10, type = c("discrete")) %>% na.omit()
+
+table.Stats(Technical_Analysis$ROC)
+
+chart.ACFplus(Technical_Analysis$ROC)
+
+ROC_arima <- auto.arima(Technical_Analysis$ROC, stationary = TRUE)
+autoplot(forecast(ROC_arima))
+
+checkresiduals(ROC_arima)
+```
+
+## ADX  
+```{r}
+Technical_Analysis$ADX <- ADX(price_daily[,2:4], n=10) %>% na.omit()
+
+table.Stats(Technical_Analysis$ADX)
+
+chart.ACFplus(Technical_Analysis$ADX)
+
+ADX_arima <- auto.arima(Technical_Analysis$ADX, stationary = TRUE)
+autoplot(forecast(ADX_arima))
+forecast_sim(ADX_arima, 20, 250, sim_color = "orange", opacity = 0.25, plot = TRUE)
+checkresiduals(ADX_arima)
+```
+
+## ROC Trade model
+```{r}
+Technical_Analysis$ROC.smooth <- EMA(Technical_Analysis$ROC, n = 10)
+table.Stats(Technical_Analysis$ROC.smooth)
+
+ts_plot(Technical_Analysis[,c(1,5,6)], type = "multiple")
+
+peaks <- Technical_Analysis[findPeaks(Technical_Analysis$ROC.smooth),] %>% index()
+peaks %>% kbl() %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed")) %>% 
+  scroll_box(width = "100%", height = "200px")
+
+valley <- Technical_Analysis[findValleys(Technical_Analysis$ROC.smooth),] %>% index()
+valley %>% kbl() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed")) %>% 
+  scroll_box(width = "100%", height = "200px")
+
+chart.Events(Technical_Analysis$ROC, valley, plot.engine = "plotly")
+chart.Events(Technical_Analysis$ADX, valley, plot.engine = "plotly")
+
+```
+
+
+
+## Risk 
+### Daily
+```{r}
+table.Variability(daily_return$Discrete)
+table.Distributions(daily_return$Discrete)
+
+table.DownsideRisk(daily_return$Discrete)
+table.DownsideRiskRatio(daily_return$Discrete)
+
+
+chart.VaRSensitivity(daily_return$Discrete, 
+                     methods=c("HistoricalVaR", "ModifiedVaR", "GaussianVaR"), 
+                     colorset=bluefocus, lwd=2)
+chart.BarVaR(daily_return$Discrete, 
+             methods = c("GaussianVaR", "HistoricalVaR", "ModifiedVaR", "StdDev"))
+
+
+chart.VaRSensitivity(daily_return$Discrete, 
+                     methods=c("HistoricalES", "ModifiedES", "GaussianES"), 
+                     colorset=bluefocus, lwd=2)
+chart.BarVaR(daily_return$Discrete, 
+             methods = c("GaussianES", "HistoricalES", "ModifiedES"))
+
+
+table.Drawdowns(daily_return$Discrete)
+chart.Drawdown(daily_return$Discrete, geometric = FALSE, plot.engine = "plotly")
+```
+
+
+### Weekly  
+```{r}
+table.Variability(weekly_return$Discrete)
+table.Distributions(weekly_return$Discrete)
+
+table.DownsideRisk(weekly_return$Discrete)
+table.DownsideRiskRatio(weekly_return$Discrete)
+
+
+chart.VaRSensitivity(weekly_return$Discrete, 
+                     methods=c("HistoricalVaR", "ModifiedVaR", "GaussianVaR"), 
+                     colorset=bluefocus, lwd=2)
+chart.BarVaR(weekly_return$Discrete, 
+             methods = c("GaussianVaR", "HistoricalVaR", "ModifiedVaR", "StdDev"))
+
+
+chart.VaRSensitivity(weekly_return$Discrete, 
+                     methods=c("HistoricalES", "ModifiedES", "GaussianES"), 
+                     colorset=bluefocus, lwd=2)
+chart.BarVaR(weekly_return$Discrete, 
+             methods = c("GaussianES", "HistoricalES", "ModifiedES"))
+
+
+table.Drawdowns(weekly_return$Discrete)
+chart.Drawdown(weekly_return$Discrete, geometric = FALSE, plot.engine = "plotly")
+```
+
+### Monthly   
+```{r}
+table.Variability(monthly_return$Discrete)
+table.Distributions(monthly_return$Discrete)
+
+table.DownsideRisk(monthly_return$Discrete)
+table.DownsideRiskRatio(monthly_return$Discrete)
+
+
+chart.VaRSensitivity(monthly_return$Discrete, 
+                     methods=c("HistoricalVaR", "ModifiedVaR", "GaussianVaR"), 
+                     colorset=bluefocus, lwd=2)
+chart.BarVaR(monthly_return$Discrete, 
+             methods = c("GaussianVaR", "HistoricalVaR", "ModifiedVaR", "StdDev"))
+
+
+chart.VaRSensitivity(monthly_return$Discrete, 
+                     methods=c("HistoricalES", "ModifiedES", "GaussianES"), 
+                     colorset=bluefocus, lwd=2)
+chart.BarVaR(monthly_return$Discrete, 
+             methods = c("GaussianES", "HistoricalES", "ModifiedES"))
+
+
+table.Drawdowns(monthly_return$Discrete)
+chart.Drawdown(monthly_return$Discrete, geometric = FALSE, plot.engine = "plotly")
+```
+
+
+
